@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catch the Star</title>
+  <style>
+    body {
+      margin: 0;
+      background: #282c34;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      text-align: center;
+    }
+    #gameCanvas {
+      background: #111;
+      display: block;
+      margin: 0 auto;
+      border: 2px solid #fff;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Catch the Star</h1>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <p id="score">Score: 0 | Vies: 3</p>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const panier = { x: 180, y: 550, width: 60, height: 20, speed: 7 };
+    const etoiles = [];
+    let score = 0;
+    let vies = 3;
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") panier.x -= panier.speed;
+      if (e.key === "ArrowRight") panier.x += panier.speed;
+      panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
+    });
+
+    function creerEtoile() {
+      etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: 3 + Math.random() * 3 });
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dessiner panier
+      ctx.fillStyle = "#00ff00";
+      ctx.fillRect(panier.x, panier.y, panier.width, panier.height);
+
+      // Mettre à jour et dessiner étoiles
+      for (let i = etoiles.length - 1; i >= 0; i--) {
+        let e = etoiles[i];
+        e.y += e.speed;
+        ctx.fillStyle = "#ffff00";
+        ctx.beginPath();
+        ctx.arc(e.x + e.size/2, e.y + e.size/2, e.size/2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Collision avec le panier
+        if (
+          e.y + e.size > panier.y &&
+          e.x + e.size > panier.x &&
+          e.x < panier.x + panier.width
+        ) {
+          etoiles.splice(i, 1);
+          score++;
+        } else if (e.y > canvas.height) {
+          etoiles.splice(i, 1);
+          vies--;
+          if (vies <= 0) {
+            alert("Game Over! Score final: " + score);
+            score = 0;
+            vies = 3;
+          }
+        }
+      }
+
+      document.getElementById("score").innerText = `Score: ${score} | Vies: ${vies}`;
+      requestAnimationFrame(update);
+    }
+
+    setInterval(creerEtoile, 1000);
+    update();
+  </script>
+</body>
+</html>
