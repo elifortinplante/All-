@@ -36,10 +36,12 @@
     let score = 0;
     let vies = 5;
 
-    let baseSpeed = 3; // vitesse de base des étoiles
-    let globalMultiplier = 1; // pour accélération progressive
+    let baseSpeed = 3;
+    let speedMultiplier = 1; // accélération progressive
     let touchX = null;
+    let bombeActive = false;
 
+    // Contrôle tactile
     canvas.addEventListener("touchstart", (e) => {
       touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
     });
@@ -50,32 +52,37 @@
       touchX = null;
     });
 
+    // Création étoiles et bombes
     function creerEtoile() {
       if (Math.random() < 0.1) {
-        // bombe
+        // Bombe 10%
         bombes.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
       } else {
         etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
       }
     }
 
-    // Fonction pour toucher bombe : accélération temporaire
+    // Activer bombe : accélération temporaire 6 secondes
     function activerBombe() {
-      etoiles.forEach(e => e.speed *= 2); // double vitesse
+      if (bombeActive) return; // éviter plusieurs bombes en même temps
+      bombeActive = true;
+      etoiles.forEach(e => e.speed *= 2);
       setTimeout(() => {
-        etoiles.forEach(e => e.speed /= 2); // retour à la vitesse initiale
+        etoiles.forEach(e => e.speed /= 2);
+        bombeActive = false;
       }, 6000);
     }
 
-    let startTime = Date.now(); // pour vitesse progressive
+    const startTime = Date.now();
 
     function update() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Accélération progressive selon temps
-      const elapsed = (Date.now() - startTime) / 1000; // secondes
-      globalMultiplier = 1 + elapsed / 60; // +1% par seconde
-      // Déplacer le panier
+      // Accélération progressive
+      const elapsed = (Date.now() - startTime) / 1000;
+      speedMultiplier = 1 + elapsed / 60;
+
+      // Déplacement panier
       if (touchX !== null) {
         panier.x = touchX - panier.width / 2;
         panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
@@ -87,13 +94,14 @@
 
       // Gérer étoiles
       for (let i = etoiles.length - 1; i >= 0; i--) {
-        let e = etoiles[i];
-        e.y += e.speed * globalMultiplier;
+        const e = etoiles[i];
+        e.y += e.speed * speedMultiplier;
         ctx.fillStyle = "#ffff00";
         ctx.beginPath();
-        ctx.arc(e.x + e.size/2, e.y + e.size/2, e.size/2, 0, Math.PI * 2);
+        ctx.arc(e.x + e.size / 2, e.y + e.size / 2, e.size / 2, 0, Math.PI * 2);
         ctx.fill();
 
+        // Collision avec panier
         if (e.y + e.size > panier.y && e.x + e.size > panier.x && e.x < panier.x + panier.width) {
           etoiles.splice(i, 1);
           score++;
@@ -104,20 +112,20 @@
             alert("Game Over! Score final: " + score);
             score = 0;
             vies = 5;
-            startTime = Date.now();
             etoiles.length = 0;
             bombes.length = 0;
+            startTime = Date.now();
           }
         }
       }
 
       // Gérer bombes
       for (let i = bombes.length - 1; i >= 0; i--) {
-        let b = bombes[i];
-        b.y += b.speed * globalMultiplier;
+        const b = bombes[i];
+        b.y += b.speed * speedMultiplier;
         ctx.fillStyle = "#ff0000";
         ctx.beginPath();
-        ctx.arc(b.x + b.size/2, b.y + b.size/2, b.size/2, 0, Math.PI * 2);
+        ctx.arc(b.x + b.size / 2, b.y + b.size / 2, b.size / 2, 0, Math.PI * 2);
         ctx.fill();
 
         if (b.y + b.size > panier.y && b.x + b.size > panier.x && b.x < panier.x + panier.width) {
@@ -128,7 +136,7 @@
         }
       }
 
-      // Affichage score et vies en haut à gauche
+      // Affichage score et vies
       ctx.fillStyle = "#fff";
       ctx.font = "20px Arial";
       ctx.fillText(`Vies: ${vies}  Étoiles: ${score}`, 10, 30);
