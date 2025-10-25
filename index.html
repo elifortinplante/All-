@@ -12,7 +12,7 @@
       font-family: Arial, sans-serif;
       overflow: hidden;
       text-align: center;
-      touch-action: none; /* Empêche le scroll sur mobile */
+      touch-action: none;
     }
     #gameCanvas {
       background: #111;
@@ -21,15 +21,10 @@
       border: 2px solid #fff;
       touch-action: none;
     }
-    h1 {
-      margin: 10px 0;
-    }
   </style>
 </head>
 <body>
-  <h1>Catch the Star</h1>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
-  <p id="score">Score: 0 | Vies: 3</p>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -37,11 +32,14 @@
 
     const panier = { x: 180, y: 550, width: 60, height: 20 };
     const etoiles = [];
+    const bombes = [];
     let score = 0;
-    let vies = 3;
+    let vies = 5;
 
-    // Déplacement tactile
+    let baseSpeed = 3; // vitesse de base des étoiles
+    let globalMultiplier = 1; // pour accélération progressive
     let touchX = null;
+
     canvas.addEventListener("touchstart", (e) => {
       touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
     });
@@ -53,13 +51,31 @@
     });
 
     function creerEtoile() {
-      etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: 3 + Math.random() * 3 });
+      if (Math.random() < 0.1) {
+        // bombe
+        bombes.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
+      } else {
+        etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
+      }
     }
+
+    // Fonction pour toucher bombe : accélération temporaire
+    function activerBombe() {
+      etoiles.forEach(e => e.speed *= 2); // double vitesse
+      setTimeout(() => {
+        etoiles.forEach(e => e.speed /= 2); // retour à la vitesse initiale
+      }, 6000);
+    }
+
+    let startTime = Date.now(); // pour vitesse progressive
 
     function update() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Déplacer le panier avec le toucher
+      // Accélération progressive selon temps
+      const elapsed = (Date.now() - startTime) / 1000; // secondes
+      globalMultiplier = 1 + elapsed / 60; // +1% par seconde
+      // Déplacer le panier
       if (touchX !== null) {
         panier.x = touchX - panier.width / 2;
         panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
@@ -69,21 +85,16 @@
       ctx.fillStyle = "#00ff00";
       ctx.fillRect(panier.x, panier.y, panier.width, panier.height);
 
-      // Mettre à jour et dessiner étoiles
+      // Gérer étoiles
       for (let i = etoiles.length - 1; i >= 0; i--) {
         let e = etoiles[i];
-        e.y += e.speed;
+        e.y += e.speed * globalMultiplier;
         ctx.fillStyle = "#ffff00";
         ctx.beginPath();
         ctx.arc(e.x + e.size/2, e.y + e.size/2, e.size/2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Collision avec le panier
-        if (
-          e.y + e.size > panier.y &&
-          e.x + e.size > panier.x &&
-          e.x < panier.x + panier.width
-        ) {
+        if (e.y + e.size > panier.y && e.x + e.size > panier.x && e.x < panier.x + panier.width) {
           etoiles.splice(i, 1);
           score++;
         } else if (e.y > canvas.height) {
@@ -92,12 +103,36 @@
           if (vies <= 0) {
             alert("Game Over! Score final: " + score);
             score = 0;
-            vies = 3;
+            vies = 5;
+            startTime = Date.now();
+            etoiles.length = 0;
+            bombes.length = 0;
           }
         }
       }
 
-      document.getElementById("score").innerText = `Score: ${score} | Vies: ${vies}`;
+      // Gérer bombes
+      for (let i = bombes.length - 1; i >= 0; i--) {
+        let b = bombes[i];
+        b.y += b.speed * globalMultiplier;
+        ctx.fillStyle = "#ff0000";
+        ctx.beginPath();
+        ctx.arc(b.x + b.size/2, b.y + b.size/2, b.size/2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (b.y + b.size > panier.y && b.x + b.size > panier.x && b.x < panier.x + panier.width) {
+          bombes.splice(i, 1);
+          activerBombe();
+        } else if (b.y > canvas.height) {
+          bombes.splice(i, 1);
+        }
+      }
+
+      // Affichage score et vies en haut à gauche
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Vies: ${vies}  Étoiles: ${score}`, 10, 30);
+
       requestAnimationFrame(update);
     }
 
