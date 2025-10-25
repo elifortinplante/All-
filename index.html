@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catch the Star</title>
+  <title>Catch the Star - Mobile</title>
   <style>
     body {
       margin: 0;
@@ -12,12 +12,14 @@
       font-family: Arial, sans-serif;
       overflow: hidden;
       text-align: center;
+      touch-action: none; /* Empêche le scroll sur mobile */
     }
     #gameCanvas {
       background: #111;
       display: block;
       margin: 0 auto;
       border: 2px solid #fff;
+      touch-action: none;
     }
     h1 {
       margin: 10px 0;
@@ -33,15 +35,21 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const panier = { x: 180, y: 550, width: 60, height: 20, speed: 7 };
+    const panier = { x: 180, y: 550, width: 60, height: 20 };
     const etoiles = [];
     let score = 0;
     let vies = 3;
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft") panier.x -= panier.speed;
-      if (e.key === "ArrowRight") panier.x += panier.speed;
-      panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
+    // Déplacement tactile
+    let touchX = null;
+    canvas.addEventListener("touchstart", (e) => {
+      touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+    });
+    canvas.addEventListener("touchmove", (e) => {
+      touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+    });
+    canvas.addEventListener("touchend", () => {
+      touchX = null;
     });
 
     function creerEtoile() {
@@ -50,6 +58,12 @@
 
     function update() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Déplacer le panier avec le toucher
+      if (touchX !== null) {
+        panier.x = touchX - panier.width / 2;
+        panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
+      }
 
       // Dessiner panier
       ctx.fillStyle = "#00ff00";
