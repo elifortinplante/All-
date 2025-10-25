@@ -37,7 +37,7 @@
     let vies = 5;
 
     let baseSpeed = 3;
-    let speedMultiplier = 1; // accélération progressive
+    let speedMultiplier = 1;
     let touchX = null;
     let bombeActive = false;
 
@@ -55,16 +55,15 @@
     // Création étoiles et bombes
     function creerEtoile() {
       if (Math.random() < 0.1) {
-        // Bombe 10%
-        bombes.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
+        bombes.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) });
       } else {
-        etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) }));
+        etoiles.push({ x: Math.random() * 380, y: 0, size: 20, speed: baseSpeed * (0.8 + Math.random() * 0.4) });
       }
     }
 
     // Activer bombe : accélération temporaire 6 secondes
     function activerBombe() {
-      if (bombeActive) return; // éviter plusieurs bombes en même temps
+      if (bombeActive) return;
       bombeActive = true;
       etoiles.forEach(e => e.speed *= 2);
       setTimeout(() => {
@@ -82,7 +81,7 @@
       const elapsed = (Date.now() - startTime) / 1000;
       speedMultiplier = 1 + elapsed / 60;
 
-      // Déplacement panier
+      // Déplacer le panier
       if (touchX !== null) {
         panier.x = touchX - panier.width / 2;
         panier.x = Math.max(0, Math.min(canvas.width - panier.width, panier.x));
@@ -101,7 +100,6 @@
         ctx.arc(e.x + e.size / 2, e.y + e.size / 2, e.size / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Collision avec panier
         if (e.y + e.size > panier.y && e.x + e.size > panier.x && e.x < panier.x + panier.width) {
           etoiles.splice(i, 1);
           score++;
@@ -114,7 +112,6 @@
             vies = 5;
             etoiles.length = 0;
             bombes.length = 0;
-            startTime = Date.now();
           }
         }
       }
